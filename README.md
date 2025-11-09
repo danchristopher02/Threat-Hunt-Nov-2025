@@ -33,23 +33,42 @@ Between July 18–19, 2025, the system nathan-iel-vm was targeted in a structure
 | **2025-07-18T18:18:38Z** | Flag 15  | Anti-forensics exit prep                     | Dropped `EmptySysmonConfig.xml`                         |
 
 ---
-### Starting Point – Identifying the Initial System
+### Starting Point – Identifying the Most Suspicious Machine
 
 **Objective:**
-Determine where to begin hunting based on provided indicators such as HR related stuffs or tools were recently touched...over the mid-july weekends.
+Determine where to begin hunting based on provided indicators such as: 
+1. Multiple machines in the department started spawning processes originating from the download folders. This unexpected scenario occurred during the first half of October. 
+2. Several machines were found to share the same types of files — similar executables, naming patterns, and other traits.
+3. Common keywords among the discovered files included “desk,” “help,” “support,” and “tool.”
+4. Intern operated machines seem to be affected to certain degree.
 
-**Host of Interest (Starting Point):** `nathan-iel-vm`  
-**Why:** HR tooling/scripts activity on July 18th; anchor of suspicious operations.
+**Host of Interest (Starting Point):** `gab-intern-vm`  
+**Why:** Machine stood out with the highest number of suspicious "7-Zip Help.lnk" files.
 **KQL Query Used:**
 ```
-DeviceProcessEvents
-| where Timestamp between (datetime(2025-07-01) .. datetime(2025-07-31))
-| where ProcessCommandLine contains "HR"
-| where ProcessCommandLine contains "tool"
-| summarize Count = count() by DeviceName
-| sort by Count desc
+//Counts number of files that contain ("desk","help","support","tool")
+//"7-Zip Help.lnk" was found the most (208)
+let start = datetime(2025-10-01);
+let end   = datetime(2025-10-15 23:59:59);
+DeviceFileEvents
+| where TimeGenerated between (start .. end)
+| where FileName has_any ("desk","help","support","tool")
+| summarize FileCount = count() by FileName
+|order by FileCount desc
 ```
-<img width="428" height="258" alt="Screenshot 2025-08-17 213533" src="https://github.com/user-attachments/assets/116cd420-68e4-4dc7-8b44-fcb2d85bf242" />
+
+```
+//Counts number of "7-Zip Help.lnk" files in each machine
+//"gab-intern-vm" contains most (15)
+let start = datetime(2025-10-01);
+let end   = datetime(2025-10-15 23:59:59);
+DeviceFileEvents
+| where TimeGenerated between (start .. end)
+| where FileName == "7-Zip Help.lnk"
+| summarize FileCount = count() by DeviceName
+| order by FileCount desc
+```
+
 
 
 ---
