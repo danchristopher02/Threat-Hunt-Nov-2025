@@ -79,7 +79,7 @@ DeviceFileEvents
 
 🚩 **Flag 1 – Initial PowerShell Execution Detection**  
 🎯 **Objective:** Detect the earliest anomalous execution that could represent an entry point.  
-📌 **Finding (answer):** **-ExecutionPolicy**  
+📌 **Finding (answer):** **-ExecutionPolicy Bypass**  
 🔍 **Evidence:**  
 - **Host:** gab-intern-vm  
 - **TimeGenerated:** 2025-10-06T06:00:48.7549551Z**  
