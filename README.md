@@ -78,23 +78,24 @@ DeviceFileEvents
 ---
 
 🚩 **Flag 1 – Initial PowerShell Execution Detection**  
-🎯 **Objective:** Pinpoint the earliest suspicious PowerShell activity that marks the intruder's possible entry.  
-📌 **Finding (answer):** **2025-07-19T02:07:43.9041721Z**  
+🎯 **Objective:** Detect the earliest anomalous execution that could represent an entry point.  
+📌 **Finding (answer):** **-ExecutionPolicy**  
 🔍 **Evidence:**  
-- **Host:** nathan-iel-vm  
-- **Timestamp:** 2025-07-18 ~02:07:42Z (console), earliest creation at **2025-07-19T02:07:43.9041721Z**  
-- **Process:** powershell.exe → `whoami.exe /all`  
-- **CommandLine:** `"powershell.exe" whoami /all`  
+- **Host:** gab-intern-vm  
+- **TimeGenerated:** 2025-10-06T06:00:48.7549551Z**  
+- **Process:** powershell.exe
+- **CommandLine:** `"powershell.exe -ExecutionPolicy Bypass -NoProfile -Command ...`  
 - **SHA256:** `9785001b0dcf755eddb8af294a373c0b87b2498660f724e76c4d53f9c217c7a3`  
-💡 **Why it matters:** Establishes the first malicious PowerShell usage to enumerate identity/privileges, anchoring the intrusion timeline.
+💡 **Why it matters:** indicates the actor intentionally disabled PowerShell execution controls to run arbitrary script content in-memory.
 **KQL Query Used:**
 ```
 DeviceProcessEvents
-| where DeviceName contains "nathan-iel-vm"
-| where ProcessCommandLine contains "who"
-| project Timestamp, DeviceName, FileName, ProcessCommandLine, ProcessCreationTime,InitiatingProcessCommandLine , InitiatingProcessCreationTime, SHA256
+| where DeviceName == "gab-intern-vm"
+| where TimeGenerated between (datetime(2025-10-01) .. datetime(2025-10-15))
+| project TimeGenerated, DeviceName, InitiatingProcessFileName, FileName, ProcessCommandLine, FolderPath, AccountName, SHA256
+| order by TimeGenerated asc
 ```
-<img width="528" height="313" alt="Screenshot 2025-08-17 213848" src="https://github.com/user-attachments/assets/529a90cb-083e-43b8-a0ad-85aa9ed5a3b2" />
+
 
 
 ---
