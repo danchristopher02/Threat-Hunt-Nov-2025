@@ -123,24 +123,28 @@ DeviceFileEvents
 
 ---
 
-🚩 **Flag 3 – Privileged Group Assessment**  
-🎯 **Objective:** Identify elevated accounts on the target system.  
-📌 **Finding (answer):** `"powershell.exe" net localgroup Administrators`  
+🚩 **Flag 3 – Quick Data Probe**  
+🎯 **Objective:** Spot brief, opportunistic checks for readily available sensitive content.
+📌 **Finding (answer):** `"powershell.exe" -NoProfile -Sta -Command "try { Get-Clipboard | Out-Null } catch { }"`  
 🔍 **Evidence:**  
-- **Host:** nathan-iel-vm  
-- **Timestamp:** 2025-07-18T02:16:21Z  
+- **Host:** gab-intern-vm  
+- **Timestamp:** 10/9/2025, 12:50:39.955 PM 
 - **Process:** powershell.exe  
-- **CommandLine:** `"powershell.exe" net localgroup Administrators`  
+- **CommandLine:** `"powershell.exe" -NoProfile -Sta -Command "try { Get-Clipboard | Out-Null } catch { }"`  
 - **SHA256:** `9785001b0dcf755eddb8af294a373c0b87b2498660f724e76c4d53f9c217c7a3`  
-💡 **Why it matters:** Enumerating local Administrators identifies high‑value accounts to target for impersonation/persistence.
+💡 **Why it matters:** Reading the clipboard is a low-effort, high-reward probe — users frequently copy passwords, tokens, or sensitive snippets. A short-lived Get-Clipboard invocation indicates an opportunistic data grab that often precedes broader data collection or credential theft.
 **KQL Query Used:**
 ```
+let start = datetime(2025-10-01);
+let end   = datetime(2025-10-15 23:59:59);
 DeviceProcessEvents
-| where DeviceName contains "nathan-iel-vm"
-| where ProcessCommandLine contains "net"
-| project Timestamp, DeviceName, FileName, ProcessCommandLine, ProcessCreationTime,InitiatingProcessCommandLine , InitiatingProcessCreationTime, SHA256
+| where TimeGenerated between (start .. end)
+| where DeviceName == "gab-intern-vm"
+| where ProcessCommandLine has_any ("Get-Clipboard","GetClipboard","GetClipboardData","clip.exe","/c clip")
+| project DeviceName, FileName, ProcessId, InitiatingProcessFileName, InitiatingProcessAccountName, ProcessCommandLine, SHA256
+
 ```
-<img width="867" height="343" alt="Screenshot 2025-08-17 215559" src="https://github.com/user-attachments/assets/99a871c3-c398-42dc-b375-91b7e41851bf" />
+
 
 
 ---
