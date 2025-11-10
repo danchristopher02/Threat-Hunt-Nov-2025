@@ -100,23 +100,26 @@ DeviceProcessEvents
 
 ---
 
-🚩 **Flag 2 – Local Account Assessment**  
-🎯 **Objective:** Map user accounts and privileges available on the system.  
-📌 **Finding (answer):** `SHA256 = 9785001b0dcf755eddb8af294a373c0b87b2498660f724e76c4d53f9c217c7a3`  
+🚩 **Flag 2 – Defense Disabling**  
+🎯 **Objective:** Identify indicators that suggest attempts to imply or simulate changing security posture..  
+📌 **Finding (answer):** `DefenderTamperArtifact.lnk`  
 🔍 **Evidence:**  
-- **Host:** nathan-iel-vm  
-- **Timestamp:** 2025-07-18T02:07:42Z  
-- **Process:** `"powershell.exe" whoami /all`  
-- **SHA256:** `9785001b0dcf755eddb8af294a373c0b87b2498660f724e76c4d53f9c217c7a3`  
-💡 **Why it matters:** `whoami /all` reveals group memberships/privileges; classic recon to plan escalation.
+- **Host:** gab-intern-vm  
+- **Timestamp:** 10/9/2025, 12:34:59.126 PM 
+- **Process:** `"explorer.exe`  
+- **SHA256:** `3ec18510105244255bf8e3c4790ca2ff8fe3433bd433f9b0c7bd130868a38662`  
+💡 **Why it matters:** Strong indicator of intent to evade or mislead — even if Defender settings weren’t actually changed. It often precedes or supports defense-evasion activity.
 **KQL Query Used:**
 ```
-DeviceProcessEvents
-| where DeviceName contains "nathan-iel-vm"
-| where ProcessCommandLine contains "who"
-| project Timestamp, DeviceName, FileName, ProcessCommandLine, ProcessCreationTime,InitiatingProcessCommandLine , InitiatingProcessCreationTime, SHA256
+let start = datetime(2025-10-01);
+let end   = datetime(2025-10-15 23:59:59);
+DeviceFileEvents
+| where TimeGenerated between (start .. end)
+| where DeviceName == "gab-intern-vm"
+| where ActionType == "FileCreated"
+| where FileName contains "tamper" or FolderPath contains "tamper"
 ```
-<img width="824" height="264" alt="Screenshot 2025-08-17 215913" src="https://github.com/user-attachments/assets/166aa43f-47b0-4dba-8cd1-8dd7bf413c37" />
+
 
 ---
 
