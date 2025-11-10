@@ -149,22 +149,30 @@ DeviceProcessEvents
 
 ---
 
-🚩 **Flag 4 – Active Session Discovery**  
-🎯 **Objective:** Reveal which sessions are currently active for potential masking.  
-📌 **Finding (answer):** `qwinsta.exe`  
+🚩 **Flag 4 – Host Context Recon**  
+🎯 **Objective:** Find activity that gathers basic host and user context to inform follow-up actions.  
+📌 **Finding (answer):** `10/9/2025, 12:51:44.342 PM (TimeGenerated for qwinsta.exe)`  
 🔍 **Evidence:**  
-- **Host:** nathan-iel-vm  
-- **Timestamp:** ~2025-07-18T02:17:29Z  
-- **Process:** `"powershell.exe" qwinsta` → spawned **qwinsta.exe**  
-💡 **Why it matters:** Live session enumeration enables “ride‑along” with existing users to reduce new‑logon noise and increase stealth.
+- **Host:** gab-intern-vm  
+- **Timestamp:** 10/9/2025, 12:51:44.342 PM  
+- **Process:** **qwinsta.exe**  
+💡 **Why it matters:** qwinsta enumerates session/user context on the host (who’s logged on, session IDs, session states). This is low-impact reconnaissance that helps an actor decide where to escalate or maintain persistence (which accounts to target, active sessions to hijack, or lateral movement vectors).
 **KQL Query Used:**
 ```
+let start = datetime(2025-10-01);
+let end   = datetime(2025-10-15 23:59:59);
 DeviceProcessEvents
-| where DeviceName contains "nathan-iel-vm"
-| where ProcessCommandLine contains "qwinsta"
-| project Timestamp, DeviceName, FileName, ProcessCommandLine, ProcessCreationTime,InitiatingProcessCommandLine , InitiatingProcessCreationTime, SHA256
+| where TimeGenerated between (start .. end)
+| where DeviceName == "gab-intern-vm"
+| where ProcessCommandLine has_any (
+    "whoami","whoami /all","systeminfo","hostname",
+    "net user","net localgroup","net group","net accounts",
+    "query user","query session","qwinsta","qwery","qwinsta.exe",
+    "ipconfig","ipconfig /all"
+)
+| project TimeGenerated, DeviceName, FileName, ProcessId, InitiatingProcessFileName, InitiatingProcessAccountName, ProcessCommandLine
+| order by TimeGenerated desc
 ```
-<img width="729" height="610" alt="Screenshot 2025-08-17 214913" src="https://github.com/user-attachments/assets/ddd32254-a7d9-4e9c-b4be-c854593f3378" />
 
 ---
 
