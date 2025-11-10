@@ -177,7 +177,7 @@ DeviceProcessEvents
 ---
 
 🚩 **Flag 5 – Storage Surface Mapping**  
-🎯 **Objective:** Detect discovery of local or network storage locations that might hold interesting data..  
+🎯 **Objective:** Detect discovery of local or network storage locations that might hold interesting data.  
 📌 **Finding (answer):** `"cmd.exe" /c wmic logicaldisk get name,freespace,size (the 2nd command chronologically tied to storage assessment)`  
 🔍 **Evidence:**  
 - **Host:** gab-intern-vm  
@@ -206,25 +206,32 @@ DeviceProcessEvents
 
 ---
 
-🚩 **Flag 6 – Defender Policy Modification**  
-🎯 **Objective:** Validate if core system protection settings were modified.  
-📌 **Finding (answer):** **DisableAntiSpyware** (registry value name)  
+🚩 **Flag 6 – Connectivity & Name Resolution Check**  
+🎯 **Objective:** Identify checks that validate network reachability and name resolution.  
+📌 **Finding (answer):** `RuntimeBroker.exe`  
 🔍 **Evidence:**  
-- **Host:** nathan-iel-vm  
-- **Timestamp:** 2025-07-18T14:38:21Z  
-- **ActionType:** RegistryValueSet  
-- **RegistryKey:** `HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender`  
-- **RegistryValueName:** `DisableAntiSpyware` → **1**  
-💡 **Why it matters:** Weakens baseline protections at policy level; corroborates defense evasion.
+- **Host:** gab-intern-vm  
+- **Timestamps:** 10/9/2025, 12:51:32.590 PM  
+- **Initiating Parent Process:** `RuntimeBroker.exe`
+- **CommandLine:** `"cmd.exe" /c nslookup helpdesk-telemetry.remoteassist.invalid`  
+- **SHA256:** `9785001b0dcf755eddb8af294a373c0b87b2498660f724e76c4d53f9c217c7a3`  
+💡 **Why it matters:** `RuntimeBroker.exe` is a Windows system process that normally mediates permissions for UWP apps—but in this context, its role as the parent of a connectivity probe is suspicious. It suggests a potential living-off-the-land or masquerading attempt, where legitimate system processes are leveraged to test outbound connectivity and DNS resolution before data exfiltration or C2 activity.
 **KQL Query Used:**
 ```
-DeviceRegistryEvents
-| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
-| where DeviceName contains "nathan-iel-vm"
-| where ActionType == "RegistryValueSet"
-| project Timestamp, DeviceName, ActionType, RegistryKey, RegistryValueName, RegistryValueData, PreviousRegistryKey, PreviousRegistryValueData, PreviousRegistryValueName
+let start = datetime(2025-10-01);
+let end   = datetime(2025-10-15 23:59:59);
+DeviceProcessEvents
+| where TimeGenerated between (start .. end)
+| where DeviceName == "gab-intern-vm"
+| where ProcessCommandLine has_any (
+    "nslookup","Resolve-DnsName","Test-NetConnection","Test-Connection",
+    "ping","tracert","pathping","curl","wget","tcpping","tcping",
+    "ipconfig","Get-DnsClientServerAddress","Get-NetIPConfiguration",
+    "Get-NetIPAddress","Get-NetAdapter","Test-Connection -ComputerName"
+)
+| project TimeGenerated, FileName, ProcessId, InitiatingProcessFileName, InitiatingProcessParentFileName, InitiatingProcessAccountName, ProcessCommandLine, SHA256
+| order by TimeGenerated desc
 ```
-<img width="868" height="792" alt="Screenshot 2025-08-17 220703" src="https://github.com/user-attachments/assets/3a95118b-7155-43a7-a5cb-2cbc0bd0a090" />
 
 ---
 
