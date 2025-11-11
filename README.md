@@ -288,24 +288,37 @@ DeviceProcessEvents
 
 ---
 
-🚩 **Flag 9 – Outbound Communication Test**  
-🎯 **Objective:** Catch network activity establishing contact outside the environment.  
-📌 **Finding (answer):** **.net** (TLD of unusual outbound domain)  
+🚩 **Flag 9 – Privilege Surface Check**  
+🎯 **Objective:** Detect attempts to understand privileges available to the current actor.  
+📌 **Finding (answer):** **2025-10-09T12:52:14.3135459Z** (the very first privilege-mapping attempt observed)  
 🔍 **Evidence:**  
-- **Host:** nathan-iel-vm  
-- **Suspicious Domain:** `eo7j1sn715wkekj.m.pipedream.net` (amid mostly Microsoft `*.msedge.net`/`*.azureedge.net`)  
-💡 **Why it matters:** Non‑standard webhook/C2 infrastructure used as low‑profile beacon prior to exfiltration.
+- **Host:** gab-intern-vm  
+- **Timestamp:** `2025-10-09T12:52:14.3135459Z` (local: 10/9/2025, 12:52:14.313 PM)
+- **Process (initial):** `cmd.exe` (ProcessId: `4860`) — launched by powershell.exe (ProcessId: 8824)
+- **Observed child:** `whoami.exe` (ProcessId: `6692`) executed immediately after the cmd invocation
+- **CommandLine:** `"cmd.exe" /c whoami /groups` → which results in `whoami /groups` being executed
+- **Account:** `g4bri3lintern`
+- **Follow-ons (context):** Subsequent near-identical calls show `whoami /priv` at `2025-10-09T12:52:15.322Z`, indicating the actor checked both group memberships and privileges in quick succession.
+- 💡 **Why it matters:** The first `whoami /groups` at `12:52:14.3135459Z` indicates the actor was mapping group membership (the privilege surface) to decide whether to operate as that user or attempt elevation. Early detection of these queries is critical because privilege mapping is a decision point — if the actor already has useful privileges they may proceed to lateral movement, credential theft, or persistence; if not, they may attempt privilege escalation.
 **KQL Query Used:**
 ```
-DeviceNetworkEvents
-| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
-| where DeviceName contains "nathan-iel-vm"
-| where RemoteUrl != ""
-| where RemoteUrl !contains ".com"
-| summarize Count = count() by RemoteUrl
-| sort by Count desc
+let start = datetime(2025-10-01);
+let end   = datetime(2025-10-15 23:59:59);
+DeviceProcessEvents
+| where TimeGenerated between (start .. end)
+| where DeviceName == "gab-intern-vm"
+| where ProcessCommandLine has_any (
+    "whoami","whoami.exe","whoami /all","whoami /priv","whoami /groups",
+    "net user","net localgroup","net group",
+    "whoami /fo","whoami /r",
+    "Get-LocalGroup","Get-LocalGroupMember","Get-LocalUser","Get-LocalGroup -Name",
+    "Get-ADUser","Get-ADPrincipalGroupMembership","Get-LocalGroupMember -Name",
+    "whoami /priv","tokenprivileges","Get-Process -IncludeUserName"
+)
+| project Timestamp, FileName, ProcessId, InitiatingProcessFileName, InitiatingProcessId, InitiatingProcessAccountName, ProcessCommandLine
+| order by Timestamp asc
 ```
-<img width="498" height="575" alt="Screenshot 2025-08-17 221558" src="https://github.com/user-attachments/assets/ff3a81e7-bcd1-43fb-a85c-169e54aeb922" />
+
 
 ---
 
