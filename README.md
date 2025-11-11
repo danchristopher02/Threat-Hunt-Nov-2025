@@ -235,29 +235,29 @@ DeviceProcessEvents
 
 ---
 
-🚩 **Flag 7 – Access to Credential-Rich Memory Space**  
-🎯 **Objective:** Identify if the attacker dumped memory content from a sensitive process.  
-📌 **Finding (answer):** HR-related dump file disguise = **HRConfig.json**  
+🚩 **Flag 7 – Interactive Session Discovery**  
+🎯 **Objective:** Reveal attempts to detect interactive or active user sessions on the host.  
+📌 **Finding (answer):** InitiatingProcessUniqueId = `2533274790397065`
 🔍 **Evidence:**  
-- **Host:** nathan-iel-vm  
-- **Timestamps:** 2025-07-18T15:10:47Z & 15:12:27Z  
-- **Process:** `rundll32.exe`  
-- **CommandLines:**  
-  - `"rundll32.exe" C:\Windows\System32\comsvcs.dll, MiniDump 7784 C:\HRTools\HRConfig.json full`  
-  - `"rundll32.exe" C:\Windows\System32\comsvcs.dll, MiniDump 716 C:\HRTools\HRConfig.json full`  
-- **Initiating:** powershell.exe  
-- **SHA256:** `076592ca1957f8357cc201f0015072c612f5770ad7de85f87f254253c754dd7`  
-💡 **Why it matters:** comsvcs.dll MiniDump likely targeted LSASS; output masked as HR config to blend with business activity.
+- **Host:** gab-intern-vm  
+- **Observed Commands (chronological):**  
+  - 10/9/2025, 12:50:58.317 PM — `cmd.exe /c quser` — Account: `g4bri3lintern` — InitiatingProcessUniqueId: `2533274790397065`  
+  - 10/9/2025, 12:50:59.344 PM — `cmd.exe /c qwinsta` — Account: `g4bri3lintern` — InitiatingProcessUniqueId: `2533274790397065`
+  - 10/9/2025, 12:51:44.308 PM — `cmd.exe /c query session` — Account: `g4bri3lintern` — InitiatingProcessUniqueId: `2533274790397065`
+- **Process / Parent context:** `powershell.exe` (observed as the process row FileName) with `cmd.exe` shown as the initiating parent filename in the events — all tied to the same initiating unique id above.  
+💡 **Why it matters:** These commands (`quser`, `qwinsta`, `query session`) explicitly enumerate interactive sessions (who is logged on, session IDs, session states). The repeated usage over a short window, all attributed to the same initiating process unique id, indicates a deliberate session-discovery action — a preparatory step to determine which sessions or users are active and therefore which targets or timings are best for escalation, session hijack, or lateral movement.
 **KQL Query Used:**
 ```
+let start = datetime(2025-10-01);
+let end   = datetime(2025-10-15 23:59:59);
 DeviceProcessEvents
-| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
-| where DeviceName contains "nathan-iel-vm"
-| where ProcessCommandLine contains "Dump"
-| project Timestamp, DeviceId, FileName, ProcessCommandLine, ProcessCreationTime,InitiatingProcessCommandLine , InitiatingProcessCreationTime, SHA256
+| where TimeGenerated between (start .. end)
+| where ProcessCommandLine has_any ("qwinsta", "query session", "quser", "query user")
+| project Timestamp, DeviceName, InitiatingProcessFileName, FileName, ProcessCommandLine, InitiatingProcessAccountName, InitiatingProcessUniqueId
+| order by Timestamp desc
 
 ```
-<img width="879" height="567" alt="Screenshot 2025-08-17 221121" src="https://github.com/user-attachments/assets/1c15856c-3250-4f8d-ad99-5cc96f053f63" />
+
 
 ---
 
