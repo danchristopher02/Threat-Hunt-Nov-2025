@@ -324,13 +324,12 @@ DeviceProcessEvents
 
 🚩 **Flag 10 – Proof-of-Access & Egress Validation**  
 🎯 **Objective:** Find actions that both validate outbound reachability and attempt to capture host state for exfiltration value.  
-📌 **Finding (answer):** First outbound destination contacted → **`www.msftconnecttest.com`**  
+📌 **Finding (answer):** First outbound destination contacted → **www.msftconnecttest.com**  
 🔍 **Evidence:**  
 - **Host:** gab-intern-vm
 - **Timestamp:** 10/9/2025, 12:55:05.765 PM
 - **Destination (FQDN):** `www.msftconnecttest.com`
-- **Remote IP:** `23.218.218.182`
-- **Sequence:** 52.55.234.111 → **52.54.13.125** (last at 2025-07-18T15:28:44Z)  
+- **Remote IP:** `23.218.218.182` 
 💡 **Why it matters:** `www.msftconnecttest.com` is Microsoft’s connectivity test endpoint (NCSI). A request to this FQDN demonstrates the host has outbound network reachability — a necessary precondition for exfiltration or C2. While this specific domain is normally used by Windows to verify internet access, the observed connection still proves egress capability in the attack timeline; adversaries can leverage the same check or similar trusted endpoints to confirm they can reach external infrastructure before moving data off-host.
 **KQL Query Used:**
 ```
