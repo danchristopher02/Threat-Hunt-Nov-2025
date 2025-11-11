@@ -322,24 +322,31 @@ DeviceProcessEvents
 
 ---
 
-🚩 **Flag 10 – Covert Data Transfer**  
-🎯 **Objective:** Uncover evidence of internal data leaving the environment.  
-📌 **Finding (answer):** Last unusual outbound connection → **52.54.13.125**  
+🚩 **Flag 10 – Proof-of-Access & Egress Validation**  
+🎯 **Objective:** Find actions that both validate outbound reachability and attempt to capture host state for exfiltration value.  
+📌 **Finding (answer):** First outbound destination contacted → **www.msftconnecttest.com**  
 🔍 **Evidence:**  
-- **Host:** nathan-iel-vm · **ActionType:** ConnectionSuccess  
-- **RemoteUrl:** `eo7j1sn715wkekj.m.pipedream.net`  
+- **Host:** gab-intern-vm
+- **Timestamp:** 10/9/2025, 12:55:05.765 PM
+- **Destination (FQDN):** `www.msftconnecttest.com`
+- **Remote IP:** `23.218.218.182`
 - **Sequence:** 52.55.234.111 → **52.54.13.125** (last at 2025-07-18T15:28:44Z)  
-💡 **Why it matters:** Validates egress path to external service consistent with data staging/exfil.
+💡 **Why it matters:** www.msftconnecttest.com is Microsoft’s connectivity test endpoint (NCSI). A request to this FQDN demonstrates the host has outbound network reachability — a necessary precondition for exfiltration or C2. While this specific domain is normally used by Windows to verify internet access, the observed connection still proves egress capability in the attack timeline; adversaries can leverage the same check or similar trusted endpoints to confirm they can reach external infrastructure before moving data off-host.
 **KQL Query Used:**
 ```
 DeviceNetworkEvents
-| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
-| where DeviceName contains "nathan-iel-vm"
-| where RemoteUrl !~ ""
-| where RemoteUrl contains "pipedream.net"
-| project Timestamp, DeviceName, ActionType, RemoteIP, RemoteUrl
+| where DeviceName == "gab-intern-vm"
+| where TimeGenerated between (datetime(2025-10-09T12:51:18Z) .. datetime(2025-10-15T23:59:59Z))
+// Only outbound-type events with a remote endpoint
+| where isnotempty(RemoteIP) or isnotempty(RemoteUrl)
+// Extract hostname from RemoteUrl if it exists
+| extend Destination = tostring(
+    iff(isnotempty(RemoteUrl),
+        parse_url(RemoteUrl).Host,
+        RemoteIP))
+| project TimeGenerated, DeviceName, Destination, RemoteIP, RemoteUrl, RemotePort, Protocol, InitiatingProcessFileName, InitiatingProcessId, InitiatingProcessAccountName
+| order by TimeGenerated asc
 ```
-<img width="492" height="411" alt="Screenshot 2025-08-17 221959" src="https://github.com/user-attachments/assets/3497fc89-96b0-4dff-955d-1ef4930d7e02" />
 
 
 ---
