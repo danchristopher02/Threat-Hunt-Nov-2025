@@ -270,6 +270,7 @@ DeviceProcessEvents
 - **Process:** `tasklist.exe`  
 - **SHA256:** `be7241a74fe9a9d30e0631e41533a362b21c8f7aae3e5b6ad319cc15c024ec3f`
 - **CommandLine:** `tasklist /v`
+
 💡 **Why it matters:** `tasklist /v` produces a verbose snapshot of all running processes and their associated details (session, user, memory usage). This is classic reconnaissance used to identify running security products, high-value services, or processes to target or avoid. The presence of a PowerShell → cmd → `tasklist` chain suggests scripted or automated discovery rather than casual, interactive troubleshooting — a behavior consistent with post-compromise footprinting that should trigger further timeline and parent/child process analysis.
 **KQL Query Used:**
 ```
