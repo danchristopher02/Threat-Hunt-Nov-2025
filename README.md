@@ -261,24 +261,29 @@ DeviceProcessEvents
 
 ---
 
-🚩 **Flag 8 – File Inspection of Dumped Artifacts**  
-🎯 **Objective:** Detect whether memory dump contents were reviewed post‑collection.  
-📌 **Finding (answer):** `"notepad.exe" C:\HRTools\HRConfig.json`  
+🚩 **Flag 8 – Runtime Application Inventory**  
+🎯 **Objective:** Detect enumeration of running applications and services to inform risk and opportunity.  
+📌 **Finding (answer):** `tasklist.exe`  
 🔍 **Evidence:**  
-- **Host:** nathan-iel-vm  
-- **Timestamp:** 2025-07-18T15:13:16Z  
-- **Process:** notepad.exe (initiated by powershell.exe)  
-- **SHA256:** `da5807bb0997ccb5132950ec87eda2b33b1ac4533cf17a22a6f3b576ed7c5b`  
-💡 **Why it matters:** Confirms post‑dump review/validation of harvested credentials or secrets.
+- **Host:** gab-intern-vm  
+- **Timestamp:** **10/9/2025, 12:51:57.686 PM** 
+- **Process:** `tasklist.exe`  
+- **SHA256:** `be7241a74fe9a9d30e0631e41533a362b21c8f7aae3e5b6ad319cc15c024ec3f`
+- **CommandLine:** `tasklist /v`
+💡 **Why it matters:** `tasklist /v` produces a verbose snapshot of all running processes and their associated details (session, user, memory usage). This is classic reconnaissance used to identify running security products, high-value services, or processes to target or avoid. The presence of a PowerShell → cmd → `tasklist` chain suggests scripted or automated discovery rather than casual, interactive troubleshooting — a behavior consistent with post-compromise footprinting that should trigger further timeline and parent/child process analysis.
 **KQL Query Used:**
 ```
+let start = datetime(2025-10-01);
+let end   = datetime(2025-10-15 23:59:59);
 DeviceProcessEvents
-| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
-| where DeviceName contains "nathan-iel-vm"
-| where ProcessCommandLine contains "HRConfig.json"
-| project Timestamp, DeviceId, FileName, ProcessCommandLine, ProcessCreationTime,InitiatingProcessCommandLine , InitiatingProcessCreationTime, SHA256
+| where TimeGenerated between (start .. end)
+| where DeviceName == "gab-intern-vm"
+| where FileName in ("tasklist.exe","taskmgr.exe")
+   or ProcessCommandLine has_any ("tasklist","Get-Process","Get-Process -IncludeUserName","Get-Service","sc query","Get-CimInstance -ClassName Win32_Process")
+| project Timestamp, DeviceName, FileName, ProcessId, InitiatingProcessId, InitiatingProcessFileName, InitiatingProcessAccountName, ProcessCommandLine, SHA256
+| order by Timestamp desc
 ```
-<img width="760" height="268" alt="Screenshot 2025-08-17 221257" src="https://github.com/user-attachments/assets/cd60c854-428b-4fde-aa35-a48941216c7e" />
+
 
 ---
 
