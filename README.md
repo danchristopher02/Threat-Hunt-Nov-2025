@@ -350,25 +350,29 @@ DeviceNetworkEvents
 
 ---
 
-🚩 **Flag 11 – Persistence via Local Scripting**  
-🎯 **Objective:** Verify if unauthorized persistence was established via legacy tooling.  
-📌 **Finding (answer):** File name tied to Run‑key value = **OnboardTracker.ps1**  
+🚩 **Flag 11 – Bundling / Staging Artifacts**  
+🎯 **Objective:** Detect consolidation of artifacts into a single location or package for transfer.  
+📌 **Finding (answer):** `C:\Users\Public\ReconArtifacts.zip`  
 🔍 **Evidence:**  
-- **Host:** nathan-iel-vm  
-- **Timestamp:** 2025-07-18T15:50:36Z  
-- **Registry:** `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`  
-- **Value Name:** `HRToolTracker` → **C:\HRTools\LegacyAutomation\OnboardTracker.ps1**  
-- **Initiating Process:** PowerShell `New-ItemProperty ... -Force`  
-💡 **Why it matters:** Ensures re‑execution at logon; disguised as HR “Onboarding” tool.
+- **Host:** gab-intern-vm  
+- **Timestamp:** `2025-10-09T12:58:17.4364257Z`
+- **FolderPath:** `C:\Users\Public\ReconArtifacts.zip`  
+- **FileName:** `ReconArtifacts.zip`
+- **ActionType:** `FileCreated`
+- **Initiating Process:** `powershell.exe`
+💡 **Why it matters:** The presence of ReconArtifacts.zip in C:\Users\Public is a clear staging action — collected items were bundled into a single archive in a shared location, making exfiltration simpler. Even if the zip itself doesn’t prove exfiltration, staging is a strong indicator an actor prepared data for transfer and should be investigated and remediated..
 **KQL Query Used:**
 ```
-DeviceRegistryEvents
-| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
-| where DeviceName contains "nathan-iel-vm"
-| where InitiatingProcessCommandLine contains "-c"
-| project Timestamp, DeviceName, ActionType, RegistryKey, RegistryValueName, RegistryValueData, InitiatingProcessCommandLine
+DeviceFileEvents
+| where DeviceName == "gab-intern-vm"
+| where ActionType in ("FileCreated","FileModified","FileMoved","FileCopied","FileRenamed","FileSaved")
+| where FileName endswith_cs(".zip") or FileName endswith_cs(".7z") or FileName endswith_cs(".rar")
+    or FileName endswith_cs(".tar") or FileName endswith_cs(".gz") or FileName endswith_cs(".iso")
+    or FileName endswith_cs(".pst") or FileName endswith_cs(".mbox") or FileName has_any("staging","bundle","collected","exfil","archive")
+| project Timestamp = Timestamp, DeviceName, FolderPath, FileName, ActionType, FileSize, InitiatingProcessFileName, InitiatingProcessCommandLine, InitiatingProcessAccountName
+| order by Timestamp asc
 ```
-<img width="1643" height="231" alt="Screenshot 2025-08-17 222159" src="https://github.com/user-attachments/assets/2b76f134-956d-448c-8c57-c8c55a5bfc73" />
+
 
 ---
 
