@@ -1,36 +1,36 @@
-#  Threat Hunt Report: Papertrail
+#  Threat Hunt Report November 2025
 
-Analyst: Steven Cruz
+Analyst: Daniel Christopher
 
-Date Completed: 2025-08-16
+Date Completed: 11/12/2025
 
-Environment Investigated: nathan-iel-vm
+Environment Investigated: gab-intern-vm
 
-Timeframe: July 18, 2025
+Timeframe: 11/8/2025 - 11/15/2025
 
 ## Executive Summary
 
-Between July 18–19, 2025, the system nathan-iel-vm was targeted in a structured attack campaign. The adversary leveraged phishing, privilege escalation, credential dumping, persistence, data staging, exfiltration, and anti-forensics measures to achieve their objectives. Each flag represents a key stage of the attack chain, culminating in attempts to cover tracks and exit the environment undetected.
+Between October 8–10, 2025, the system gab-intern-vm was targeted in a simulated intrusion that replicated a full attack chain. The adversary performed reconnaissance, privilege discovery, and network reachability tests before staging data for exfiltration and creating persistence mechanisms. Key artifacts included the ReconArtifacts.zip staging file, SupportToolUpdater scheduled task, and RemoteAssistUpdater autorun entry. The activity concluded with the creation of a deceptive file, SupportChat_log.lnk, demonstrating anti-forensic behavior to obscure the attacker’s actions.
 
 ## Timeline
 
 | **Time (UTC)**           | **Flag** | **Action Observed**                          | **Key Evidence**                                        |
 | ------------------------ | -------- | -------------------------------------------- | ------------------------------------------------------- |
-| **2025-07-18T01:14:15Z** | Flag 1   | Malicious file created (`HRToolTracker.ps1`) | File dropped via PowerShell                             |
-| **2025-07-18T02:43:07Z** | Flag 2   | Initial execution of staging script          | PowerShell running HR script                            |
-| **2025-07-18T03:11:42Z** | Flag 3   | User token impersonation attempt             | Suspicious use of `runas`                               |
-| **2025-07-18T04:19:53Z** | Flag 4   | Reconnaissance of accounts & groups          | `net user /domain`                                      |
-| **2025-07-18T05:05:10Z** | Flag 5   | Privilege escalation via service abuse       | `sc.exe config`                                         |
-| **2025-07-18T05:27:32Z** | Flag 6   | Credential dumping from `lsass.exe`          | 92 access attempts                                      |
-| **2025-07-18T07:45:16Z** | Flag 7   | Local file staging                           | Promotion-related files                                 |
-| **2025-07-18T09:22:55Z** | Flag 8   | Archive creation (`employee-data.zip`)       | HR data compressed                                      |
-| **2025-07-18T14:12:40Z** | Flag 9   | Outbound ping to unusual domain              | `eo7j1sn715wk...pipedream.net`                          |
-| **2025-07-18T15:28:44Z** | Flag 10  | Covert exfil attempt                         | Remote IP `52.54.13.125`                                |
-| **2025-07-18T15:50:36Z** | Flag 11  | Persistence via registry run key             | `OnboardTracker.ps1`                                    |
-| **2025-07-18T16:05:21Z** | Flag 12  | Personnel file repeatedly accessed           | `Carlos.Tanaka-Evaluation.lnk`                          |
-| **2025-07-18T16:14:36Z** | Flag 13  | HR candidate list tampered                   | Modified `PromotionCandidates.csv` (SHA1: `65a5195...`) |
-| **2025-07-18T17:38:55Z** | Flag 14  | Log clearing via `wevtutil`                  | Cleared Security, System, App logs                      |
-| **2025-07-18T18:18:38Z** | Flag 15  | Anti-forensics exit prep                     | Dropped `EmptySysmonConfig.xml`                         |
+| **2025-10-06T06:00:48Z** | Flag 1   | Malicious PowerShell script                  | `-ExecutionPolicy Bypass`                               |
+| **2025-10-09T12:34:59Z** | Flag 2   | Defense Disabling                            | `DefenderTamperArtifact.lnk`                            |
+| **2025-10-09T12:50:39Z** | Flag 3   | Read Clipboard Attempt                       | `"try { Get-Clipboard | Out-Null } catch { }`           |
+| **2025-10-09T12:51:44Z** | Flag 4   | Reconnaissance of Host                       | `qwinsta.exe`                                           |
+| **2025-10-09T12:51:18Z** | Flag 5   | Storage Surface Mapping                      | `"cmd.exe" /c wmic logicaldisk get name,freespace,size` |
+| **2025-10-09T12:51:32Z** | Flag 6   | Network connectivity and DNS resolution check| `nslookup` initiated by `RuntimeBroker.exe`             |
+| **2025-10-09T12:50:59Z** | Flag 7   | Interactive session discovery                | `qwinsta` executed to enumerate user sessions           |
+| **2025-10-09T12:51:57Z** | Flag 8   | Runtime process enumeration                  | `tasklist /v` run via `cmd.exe`                         |
+| **2025-10-09T12:52:14Z** | Flag 9   | Privilege enumeration                        | `whoami /groups` and `whoami /priv`                     |
+| **2025-10-09T12:55:05Z** | Flag 10  | Outbound reachability validation             | Connection to `www.msftconnecttest.com`                 |
+| **2025-10-09T12:58:17Z** | Flag 11  | Data staging for exfiltration                | File created: `C:\Users\Public\ReconArtifacts.zip`      |
+| **2025-10-09T13:00:40Z** | Flag 12  | Outbound data transfer attempt               | Connection to `100.29.147.161 (httpbin.org)`            |
+| **2025-10-09T13:01:28Z** | Flag 13  | Persistence via scheduled task creation      | Task created: `SupportToolUpdater`                      |
+| **2025-07-18T17:38:55Z** | Flag 14  | Autorun fallback persistence                 | Registry value created: `RemoteAssistUpdater`           |
+| **2025-10-09T13:02:41Z** | Flag 15  | Creation of cover artifact (deceptive file)  | File created: `SupportChat_log.lnk`                     |
 
 ---
 ### Starting Point – Identifying the Most Suspicious Machine
@@ -101,7 +101,7 @@ DeviceProcessEvents
 ---
 
 🚩 **Flag 2 – Defense Disabling**  
-🎯 **Objective:** Identify indicators that suggest attempts to imply or simulate changing security posture..  
+🎯 **Objective:** Identify indicators that suggest attempts to imply or simulate changing security posture.  
 📌 **Finding (answer):** `DefenderTamperArtifact.lnk`  
 🔍 **Evidence:**  
 - **Host:** gab-intern-vm  
@@ -356,7 +356,7 @@ DeviceNetworkEvents
 📌 **Finding (answer):** `C:\Users\Public\ReconArtifacts.zip`  
 🔍 **Evidence:**  
 - **Host:** gab-intern-vm  
-- **Timestamp:** `2025-10-09T12:58:17.4364257Z`
+- **Timestamp: 2025-10-09T12:58:17.4364257Z**
 - **FolderPath:** `C:\Users\Public\ReconArtifacts.zip`  
 - **FileName:** `ReconArtifacts.zip`
 - **ActionType:** `FileCreated`
@@ -484,19 +484,17 @@ DeviceFileEvents
 ---
 
 ## MITRE ATT&CK (Quick Map)
-- **Execution:** T1059 (PowerShell) – Flags 1–5, 7–8  
-- **Persistence:** T1547.001 (Run Keys) – Flag 11  
-- **Discovery:** T1033/T1087 (whoami /all; group/user discovery) – Flags 1–3, 4  
-- **Credential Access:** T1003.001 (LSASS dump) – Flag 7 (MiniDump via comsvcs.dll)  
-- **Command & Control / Exfil:** T1071/T1041 – Flags 9–10 (pipedream.net, .net TLD, IP 52.54.13.125)  
-- **Defense Evasion:** T1562.001/002 & T1070.001 – Flags 5–6 (Defender), 14–15 (log clear, Sysmon blind)
+- **Execution:** T1059 (PowerShell / CMD) – Flags 1–5, 8
+- **Discovery:** T1087 / T1033 / T1057 – Flags 6–9 (system, process, and privilege enumeration)
+- **Persistence:** T1053.005 (Scheduled Task) & T1547.001 (Registry Run Key) – Flags 13–14
+- **Collection & Exfiltration:** T1074 / T1560 / T1041 – Flags 10–12 (data staging and outbound transfer)
+- **Defense Evasion / Anti-Forensics:** T1070 (Indicator Removal) – Flag 15 (planted cover artifact)
 
 ---
 
 ## Recommended Actions (Condensed)
-1. Reset/rotate credentials (HR/IT/admin).  
-2. Re-enable & harden Defender; deploy fresh Sysmon config.  
-3. Block/monitor `*.pipedream.net` and related IPs (e.g., **52.54.13.125**).  
-4. Integrity review/restore HR data (`PromotionCandidates.csv`, Carlos Tanaka records).  
-5. Hunt for persistence across estate; remove `OnboardTracker.ps1` autoruns.  
-6. Centralize logs; add detections for `comsvcs.dll, MiniDump` and Defender tamper.
+1. Review and remove persistence mechanisms (`SupportToolUpdater` task, `RemoteAssistUpdater` registry entry).
+2. Reassess egress controls and block known exfil paths (e.g., connections to `httpbin.org` and suspicious outbound IPs).
+3. Strengthen monitoring for PowerShell and CMD process chains that enumerate sessions or privileges.
+4. Implement enhanced Sysmon and Defender rules for detecting `tasklist`, `whoami`, and unauthorized zip creation under `C:\Users\Public`.
+5. Conduct a forensic sweep for user-facing artifacts (e.g., `SupportChat_log.lnk`) that may indicate deception or attacker misdirection.
