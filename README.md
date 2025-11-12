@@ -457,24 +457,28 @@ DeviceProcessEvents
 
 ---
 
-🚩 **Flag 15 – Final Cleanup and Exit Prep**  
-🎯 **Objective:** Capture the combination of anti‑forensics actions signaling attacker exit.  
-📌 **Finding (answer):** **2025-07-19T06:18:38.6841044Z**  
-🔍 **Evidence:**  
-- **File:** `EmptySysmonConfig.xml`  
-- **Path:** `C:\Temp\EmptySysmonConfig.xml`  
-- **Host:** nathan-iel-vm · **Initiating:** powershell.exe  
-💡 **Why it matters:** Blinds Sysmon to suppress detection just prior to exit; ties off anti‑forensics chain.
+🚩 **Flag 15 – Planted Narrative / Cover Artifact**  
+🎯 **Objective:** Identify a narrative or explanatory artifact intended to justify the activity.  
+📌 **Finding (answer):** **SupportChat_log.lnk**  
+🔍 **Evidence:**   
+- **Host:** gab-intern-vm
+- **Timestamp 10/9/2025, 1:02:41.569 PM**
+- **FolderPath** `C:\Users\g4bri3lintern\AppData\Roaming\Microsoft\Windows\Recent\SupportChat_log.lnk`
+- **FileName** `SupportChat_log.lnk`
+- **ActionType** `FileCreated`
+- **InitiatingProcessCommandLine:** `Explorer.EXE`
+  
+💡 **Why it matters:** The creation of both a `.txt` file and a corresponding `.lnk` shortcut in close succession to other malicious activity strongly indicates an attempt to plant a narrative or cover artifact. By naming the file “SupportChat_log,” the attacker attempted to fabricate the appearance of legitimate IT-related activity, likely to deflect suspicion during an investigation.
 **KQL Query Used:**
 ```
+let start = datetime(2025-10-09 12:30:00);
+let end   = datetime(2025-10-15 23:59:59);
 DeviceFileEvents
-| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
-| where DeviceName contains "nathan-iel-vm"
-| where FileName in ("ConsoleHost_history.txt","EmptySysmonConfig.xml","HRConfig.json")
-| sort by Timestamp desc
-| project Timestamp, DeviceName, FileName, FolderPath, InitiatingProcessCommandLine
+| where DeviceName == "gab-intern-vm"
+| where TimeGenerated between (start .. end)
+| project Timestamp, DeviceName, FolderPath, FileName, ActionType, FileSize, InitiatingProcessFileName, InitiatingProcessCommandLine, InitiatingProcessAccountName
 ```
-<img width="445" height="233" alt="Screenshot 2025-08-17 224226" src="https://github.com/user-attachments/assets/6334babb-6839-4281-b025-74346f5623e9" />
+
 
 
 ---
