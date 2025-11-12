@@ -329,7 +329,8 @@ DeviceProcessEvents
 - **Host:** gab-intern-vm
 - **Timestamp:** 10/9/2025, 12:55:05.765 PM
 - **Destination (FQDN):** `www.msftconnecttest.com`
-- **Remote IP:** `23.218.218.182` 
+- **Remote IP:** `23.218.218.182`
+  
 💡 **Why it matters:** `www.msftconnecttest.com` is Microsoft’s connectivity test endpoint (NCSI). A request to this FQDN demonstrates the host has outbound network reachability — a necessary precondition for exfiltration or C2. While this specific domain is normally used by Windows to verify internet access, the observed connection still proves egress capability in the attack timeline; adversaries can leverage the same check or similar trusted endpoints to confirm they can reach external infrastructure before moving data off-host.
 **KQL Query Used:**
 ```
@@ -360,6 +361,7 @@ DeviceNetworkEvents
 - **FileName:** `ReconArtifacts.zip`
 - **ActionType:** `FileCreated`
 - **Initiating Process:** `powershell.exe`
+  
 💡 **Why it matters:** The presence of ReconArtifacts.zip in C:\Users\Public is a clear staging action — collected items were bundled into a single archive in a shared location, making exfiltration simpler. Even if the zip itself doesn’t prove exfiltration, staging is a strong indicator an actor prepared data for transfer and should be investigated and remediated..
 **KQL Query Used:**
 ```
@@ -385,6 +387,7 @@ DeviceFileEvents
 - **Destination (resolved name):** `httpbin.org`
 - **Remote IP:** `100.29.147.161`
 - **Context:** Network row shows a TLS/HTTPS connection to `httpbin.org` at the given timestamp — a common test endpoint used to validate HTTP(S) upload or web requests. The proximity to prior staging activity (`ReconArtifacts.zip`) and the use of PowerShell as the initiating process strongly suggests an attempt to test upload capability or simulate exfiltration.
+  
 💡 **Why it matters:** An HTTPS connection to a public test service (httpbin.org) from a compromised host is a typical technique to validate egress or to test upload behavior before targeting a final exfiltration endpoint. Even if the transfer was simulated or failed, the attempt demonstrates intent and reveals the egress channel and process used.
 **KQL Query Used:**
 ```
