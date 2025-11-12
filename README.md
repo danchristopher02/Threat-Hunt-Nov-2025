@@ -376,22 +376,31 @@ DeviceFileEvents
 
 ---
 
-🚩 **Flag 12 – Targeted File Reuse / Access**  
-🎯 **Objective:** Surface the document that stood out in the attack sequence.  
-📌 **Finding (answer):** **Carlos Tanaka**  
+🚩 **Flag 12 – Outbound Transfer Attempt (Simulated)**  
+🎯 **Objective:** Identify attempts to move data off-host or test upload capability.  
+📌 **Finding (answer):** **100.29.147.161**  
 🔍 **Evidence:**  
-- **Host:** nathan-iel-vm  
-- **Repeated Access:** `Carlos.Tanaka-Evaluation.lnk` (count = 3) within HR artifacts list  
-💡 **Why it matters:** Personnel record of focus; aligns with promotion‑manipulation motive.
+- **Host:** gab-intern-vm
+- **Timestamp: 10/9/2025, 1:00:40.045 PM**
+- **Destination (resolved name):** `httpbin.org`
+- **Remote IP:** `100.29.147.161`
+- **Context:** Network row shows a TLS/HTTPS connection to `httpbin.org` at the given timestamp — a common test endpoint used to validate HTTP(S) upload or web requests. The proximity to prior staging activity (`ReconArtifacts.zip`) and the use of PowerShell as the initiating process strongly suggests an attempt to test upload capability or simulate exfiltration.
+💡 **Why it matters:** An HTTPS connection to a public test service (httpbin.org) from a compromised host is a typical technique to validate egress or to test upload behavior before targeting a final exfiltration endpoint. Even if the transfer was simulated or failed, the attempt demonstrates intent and reveals the egress channel and process used.
 **KQL Query Used:**
 ```
-DeviceEvents
-| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
-| where DeviceName contains "nathan-iel-vm"
-| summarize Count = count() by FileName
-| sort by Count desc
+DeviceNetworkEvents
+| where DeviceName == "gab-intern-vm"
+| where TimeGenerated between (datetime(2025-10-09T12:51:18Z) .. datetime(2025-10-15T23:59:59Z))
+// Only outbound-type events with a remote endpoint
+| where isnotempty(RemoteIP) or isnotempty(RemoteUrl)
+// Extract hostname from RemoteUrl if it exists
+| extend Destination = tostring(
+    iff(isnotempty(RemoteUrl),
+        parse_url(RemoteUrl).Host,
+        RemoteIP))
+| project TimeGenerated, DeviceName, Destination, RemoteIP, RemoteUrl, RemotePort, Protocol, InitiatingProcessFileName, InitiatingProcessId, InitiatingProcessAccountName
+| order by TimeGenerated asc
 ```
-<img width="434" height="767" alt="Screenshot 2025-08-17 222304" src="https://github.com/user-attachments/assets/273f916d-e5fe-40dc-924f-802f9724ebc7" />
 
 
 
