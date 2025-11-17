@@ -29,7 +29,7 @@ Between October 8–10, 2025, the system gab-intern-vm was targeted in a simulat
 | **2025-10-09T12:58:17Z** | Flag 11  | Data staging for exfiltration                | File created: `C:\Users\Public\ReconArtifacts.zip`      |
 | **2025-10-09T13:00:40Z** | Flag 12  | Outbound data transfer attempt               | Connection to `100.29.147.161 (httpbin.org)`            |
 | **2025-10-09T13:01:28Z** | Flag 13  | Persistence via scheduled task creation      | Task created: `SupportToolUpdater`                      |
-| **2025-07-18T17:38:55Z** | Flag 14  | Autorun fallback persistence                 | Registry value created: `RemoteAssistUpdater`           |
+| **2025-10-09T21:01:55Z** | Flag 14  | Autorun fallback persistence                 | Registry value created: `RemoteAssistUpdater`           |
 | **2025-10-09T13:02:41Z** | Flag 15  | Creation of cover artifact (deceptive file)  | File created: `SupportChat_log.lnk`                     |
 
 ---
@@ -434,24 +434,25 @@ DeviceProcessEvents
 
 ---
 
-🚩 **Flag 14 – Audit Trail Disruption**  
-🎯 **Objective:** Detect attempts to impair system forensics.  
-📌 **Finding (answer):** **2025-07-19T05:38:55.6800388Z** (first log‑clear attempt)  
+🚩 **Flag 14 – Autorun Fallback Persistence**  
+🎯 **Objective:** Spot lightweight autorun entries placed as backup persistence in user scope.  
+📌 **Finding (answer):** **RemoteAssistUpdater  
 🔍 **Evidence:**  
-- **Host:** nathan-iel-vm  
-- **Process:** `wevtutil.exe`  
-- **Command:** `"wevtutil.exe" cl Security` (+ additional clears shortly after)  
-- **SHA256:** `0b732d9ad576d1400db44edf3e750849ac481e9bbaa628a3914e5eef9b7181b0`  
-💡 **Why it matters:** Clear Windows Event Logs → destroys historical telemetry; classic anti‑forensics.
+- **Host:** gab-intern-vm
+- **Timestamp: 10/09/2025, 9:01:55 PM**
+- **Process:** `powershell.exe`  
+- **ActionType:** `"RegistryValueSet` 
+- **RegistryValueName:** `RemoteAssistUpdater`  
+💡 **Why it matters:** Attackers often use registry Run keys as a secondary persistence mechanism — in case their scheduled task or main implant gets deleted.
 **KQL Query Used:**
 ```
-DeviceProcessEvents
-| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
-| where DeviceName contains "nathan-iel-vm"
-| where ProcessCommandLine contains "wevtutil"
-| project Timestamp, DeviceName, FileName, ProcessCommandLine, ProcessCreationTime,InitiatingProcessCommandLine , InitiatingProcessCreationTime, SHA256
+DeviceRegistryEvents
+| where ActionType in ("RegistryValueSet", "RegistryKeyCreated")
+| where RegistryValueName == "RemoteAssistUpdater"
+| project Timestamp, DeviceName, InitiatingProcessAccountName, RegistryKey, RegistryValueName, RegistryValueData, InitiatingProcessCommandLine
+| order by Timestamp desc
 ```
-<img width="1263" height="773" alt="Screenshot 2025-08-17 223624" src="https://github.com/user-attachments/assets/af5db852-e1c5-4ff3-8919-aef0a6baa225" />
+
 
 
 
